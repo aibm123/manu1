@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cashew AI - Dashboard & Bot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chat-bubble-user { background-color: #f97316; color: white; }
+        .chat-bubble-ai { background-color: #4b5563; color: white; }
+        .chat-bubble-loading { background-color: #4b5563; color: white; display: flex; align-items: center; }
+        .chat-bubble-loading .dot { width: 8px; height: 8px; margin: 0 2px; background-color: #9ca3af; border-radius: 50%; display: inline-block; animation: bounce 1.4s infinite ease-in-out both; }
+        .chat-bubble-loading .dot:nth-child(1) { animation-delay: -0.32s; }
+        .chat-bubble-loading .dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
+        #chat-messages::-webkit-scrollbar { width: 6px; }
+        #chat-messages::-webkit-scrollbar-track { background: #1f2937; }
+        #chat-messages::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 3px; }
+        .detail-modal { transition: opacity 0.3s ease; }
+        .analysis-content ul { list-style-type: disc; padding-left: 20px; }
+        .filter-select { background-color: #374151; border: 1px solid #4b5563; }
+        .image-preview { max-width: 200px; max-height: 200px; border-radius: 8px; margin-top: 8px; }
+        .image-upload-area { border: 2px dashed #4b5563; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; }
+        .image-upload-area:hover { border-color: #f97316; background-color: #374151; }
+        .image-upload-area.dragover { border-color: #f97316; background-color: #7c2d12; }
+        .remove-image-btn { background-color: #ef4444; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; margin-left: 8px; }
+        .remove-image-btn:hover { background-color: #dc2626; }
+        .chat-bubble-user img { border-radius: 4px; }
+        .chat-bubble-user .flex { align-items: center; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200">
+
+    <div class="flex flex-col h-screen">
+        <!-- Header -->
+        <header class="bg-gray-800 shadow-md p-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <svg class="w-8 h-8 text-orange-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0-2.25l2.25 1.313M4.5 15.75l2.25-1.313M4.5 15.75l2.25 1.313M4.5 15.75V18m15-2.25l-2.25-1.313M19.5 15.75l-2.25 1.313M19.5 15.75V18m-3-3.75l-2.25-1.313m4.5 0l-2.25-1.313m0 0l2.25 1.313m-4.5 0l2.25 1.313M12 9.75l-2.25-1.313M12 9.75l2.25-1.313M12 9.75V7.5m0 2.25L9.75 9M12 9.75L14.25 9m-4.5 9l2.25-1.313M7.5 18.75l2.25-1.313M7.5 18.75V16.5m12 2.25l-2.25-1.313M19.5 18.75l-2.25-1.313M19.5 18.75V16.5" />
+                </svg>
+                <h1 class="text-xl font-bold text-white">Cashew AI Platform</h1>
+            </div>
+            <nav class="flex space-x-4">
+                <button id="nav-bot" class="px-4 py-2 bg-orange-600 text-white font-semibold rounded-lg shadow-md hover:bg-orange-700">Cashew-AI Bot</button>
+                <button id="nav-dashboard" class="px-4 py-2 bg-gray-700 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600">Dashboard</button>
+            </nav>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+            <!-- Bot Page -->
+            <div id="page-bot">
+                <div class="max-w-4xl mx-auto h-[calc(100vh-150px)] flex flex-col bg-gray-800 rounded-lg shadow-xl">
+                    <div id="chat-messages" class="flex-1 p-6 overflow-y-auto space-y-4">
+                        <div class="flex justify-start">
+                            <div class="chat-bubble-ai max-w-lg p-3 rounded-lg">
+                                <p class="font-bold mb-1">Cashew-AI</p>
+                                <p class="text-sm">Xin chào, tôi là Cashew-AI, trợ lý ảo chuyên về phân tích dữ liệu sản xuất hạt điều. Tôi có thể giúp gì cho bạn hôm nay? Hãy hỏi tôi về sản lượng, chất lượng, hoặc gửi ảnh hạt điều để tôi phân tích!</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4 border-t border-gray-700">
+                        <div class="flex items-center justify-between mb-3">
+                            <button id="toggle-image-upload" class="flex items-center space-x-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <span id="toggle-text">Thêm ảnh hạt điều</span>
+                            </button>
+                        </div>
+                        
+                        <div id="image-upload-area" class="image-upload-area mb-3 hidden">
+                            <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p class="text-gray-400">Kéo thả ảnh vào đây hoặc click để chọn ảnh</p>
+                            <input type="file" id="image-input" accept="image/*" class="hidden">
+                        </div>
+                        
+                        <div id="image-preview-container" class="hidden mb-3">
+                            <div class="flex items-center">
+                                <img id="image-preview" class="image-preview" alt="Preview">
+                                <button id="remove-image-btn" class="remove-image-btn" title="Xóa ảnh">×</button>
+                            </div>
+                        </div>
+                        
+                        <form id="chat-form" class="flex items-center space-x-3">
+                            <input type="text" id="chat-input" placeholder="Nhập câu hỏi hoặc để trống nếu chỉ gửi ảnh..." class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white">
+                            <button type="submit" class="bg-orange-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-orange-700">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Page -->
+            <div id="page-dashboard" class="hidden">
+                <div class="space-y-8">
+                    <!-- Section: Ban Lãnh đạo -->
+                    <section class="bg-gray-800 p-6 rounded-lg shadow-xl">
+                        <h2 class="text-2xl font-bold text-green-400 mb-4">Dashboard Ban Lãnh đạo</h2>
+                        <div class="mb-4 p-4 bg-gray-700 rounded-lg">
+                            <label for="management-filter-line" class="block text-sm font-medium text-gray-300 mb-2">Lọc theo dây chuyền:</label>
+                            <select id="management-filter-line" class="filter-select w-full rounded-md"></select>
+                        </div>
+                        <div id="management-dashboard-content"></div>
+                        <div class="mt-6">
+                            <button class="toggle-analysis flex items-center space-x-2 font-semibold text-blue-400 hover:text-blue-300" data-section="management"><span>Phân tích từ AI</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></button>
+                            <div class="analysis-content hidden mt-2 p-4 bg-gray-900 rounded-lg border-l-4 border-blue-500"><p>Chọn bộ lọc và nhấn nút để xem phân tích.</p></div>
+                        </div>
+                    </section>
+                    
+                    <!-- Section: Kỹ sư QC -->
+                    <section class="bg-gray-800 p-6 rounded-lg shadow-xl">
+                        <h2 class="text-2xl font-bold text-yellow-400 mb-4">Dashboard Kỹ sư QC</h2>
+                         <div class="mb-4 p-4 bg-gray-700 rounded-lg">
+                             <label for="qc-filter-batch" class="block text-sm font-medium text-gray-300 mb-2">Lọc theo lô hàng:</label>
+                             <select id="qc-filter-batch" class="filter-select w-full rounded-md"></select>
+                        </div>
+                        <div id="qualityControl-dashboard-content"></div>
+                        <div class="mt-6">
+                            <button class="toggle-analysis flex items-center space-x-2 font-semibold text-yellow-400 hover:text-yellow-300" data-section="qualityControl"><span>Phân tích từ AI</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></button>
+                            <div class="analysis-content hidden mt-2 p-4 bg-gray-900 rounded-lg border-l-4 border-yellow-500"><p>Chọn bộ lọc và nhấn nút để xem phân tích.</p></div>
+                        </div>
+                    </section>
+
+                    <!-- Section: Vận hành -->
+                    <section class="bg-gray-800 p-6 rounded-lg shadow-xl">
+                        <h2 class="text-2xl font-bold text-teal-400 mb-4">Dashboard Vận hành</h2>
+                        <div class="mb-4 p-4 bg-gray-700 rounded-lg">
+                             <label for="operations-filter-device" class="block text-sm font-medium text-gray-300 mb-2">Lọc theo thiết bị:</label>
+                             <select id="operations-filter-device" class="filter-select w-full rounded-md"></select>
+                        </div>
+                        <div id="operations-dashboard-content"></div>
+                        <div class="mt-6">
+                            <button class="toggle-analysis flex items-center space-x-2 font-semibold text-teal-400 hover:text-teal-300" data-section="operations"><span>Phân tích từ AI</span><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg></button>
+                            <div class="analysis-content hidden mt-2 p-4 bg-gray-900 rounded-lg border-l-4 border-teal-500"><p>Chọn bộ lọc và nhấn nút để xem phân tích.</p></div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="detail-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 rounded-lg shadow-xl max-w-lg w-full p-6 relative">
+            <button id="close-modal" class="absolute top-3 right-3 text-gray-400 hover:text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+            <h3 id="modal-title" class="text-xl font-bold mb-4 text-white">Chi tiết</h3>
+            <div id="modal-content" class="text-gray-300"></div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // --- API Key ---
+        const GEMINI_API_KEY = "AIzaSyCgrQI0TzpheQZYJsLabxoYgETeMtTdkX8";
+
+        // --- DATA ---
+        const MOCK_DATA = {
+            management: [
+                { id: 1, line: 'Dây chuyền A', oee: 92, output: 1500, target: 1450, defectRate: 3.5, uptime: 95, qualityScore: 98.2 },
+                { id: 2, line: 'Dây chuyền B', oee: 88, output: 1380, target: 1400, defectRate: 4.8, uptime: 91, qualityScore: 97.1 },
+                { id: 3, line: 'Dây chuyền C', oee: 95, output: 1610, target: 1550, defectRate: 2.1, uptime: 97, qualityScore: 99.0 }
+            ],
+            qualityControl: [
+                { id: 1, batch: 'Lô 2408-A01', line: 'Dây chuyền A', timestamp: '2025-08-24 10:15', totalScanned: 5000, defects: { 'Vỡ': 50, 'Mốc': 15, 'Đốm đen': 80, 'Non': 25 }, grades: { 'W180': 1200, 'W240': 2500, 'W320': 1000, 'Khác': 300 }, imageUrl: 'https://placehold.co/400x300/f87171/ffffff?text=Hạt+lỗi' },
+                { id: 2, batch: 'Lô 2408-A02', line: 'Dây chuyền A', timestamp: '2025-08-24 11:30', totalScanned: 5200, defects: { 'Vỡ': 65, 'Mốc': 10, 'Đốm đen': 95, 'Non': 30 }, grades: { 'W180': 1300, 'W240': 2600, 'W320': 1100, 'Khác': 200 }, imageUrl: 'https://placehold.co/400x300/34d399/ffffff?text=Hạt+chất+lượng' },
+                { id: 3, batch: 'Lô 2408-B01', line: 'Dây chuyền B', timestamp: '2025-08-24 10:20', totalScanned: 4800, defects: { 'Vỡ': 90, 'Mốc': 25, 'Đốm đen': 110, 'Non': 40 }, grades: { 'W180': 1000, 'W240': 2200, 'W320': 1300, 'Khác': 300 }, imageUrl: 'https://placehold.co/400x300/fbbf24/ffffff?text=Hạt+trung+bình' }
+            ],
+            operations: [
+                { id: 1, device: 'Máy rang #1', line: 'Dây chuyền A', status: 'Hoạt động', temperature: 160, humidity: 5, speed: 'N/A', energy: 45, lastMaintenance: '2025-08-01' },
+                { id: 2, device: 'Máy bóc vỏ #2', line: 'Dây chuyền A', status: 'Hoạt động', temperature: 'N/A', humidity: 'N/A', speed: 120, energy: 25, lastMaintenance: '2025-07-15' },
+                { id: 3, device: 'Buồng phân loại AI #1', line: 'Dây chuyền A', status: 'Hoạt động', temperature: 35, humidity: 45, speed: 5000, energy: 15, lastMaintenance: '2025-08-10' },
+                { id: 4, device: 'Máy rang #2', line: 'Dây chuyền B', status: 'Cảnh báo', temperature: 175, humidity: 4, speed: 'N/A', energy: 55, lastMaintenance: '2025-06-20' },
+            ]
+        };
+        let chatHistory = [];
+        let activeCharts = {};
+        let currentFilteredData = {};
+
+        // --- NAVIGATION ---
+        const navBot = document.getElementById('nav-bot');
+        const navDashboard = document.getElementById('nav-dashboard');
+        const pageBot = document.getElementById('page-bot');
+        const pageDashboard = document.getElementById('page-dashboard');
+
+        function switchPage(pageToShow) {
+            [pageBot, pageDashboard].forEach(p => p.classList.add('hidden'));
+            pageToShow.classList.remove('hidden');
+            [navBot, navDashboard].forEach(b => b.classList.replace('bg-orange-600', 'bg-gray-700'));
+            if (pageToShow === pageBot) navBot.classList.replace('bg-gray-700', 'bg-orange-600');
+            else navDashboard.classList.replace('bg-gray-700', 'bg-orange-600');
+        }
+
+        navBot.addEventListener('click', () => switchPage(pageBot));
+        navDashboard.addEventListener('click', () => switchPage(pageDashboard));
+
+        // --- CHATBOT ---
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
+        const chatMessages = document.getElementById('chat-messages');
+        const imageUploadArea = document.getElementById('image-upload-area');
+        const imageInput = document.getElementById('image-input');
+        const imagePreviewContainer = document.getElementById('image-preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const removeImageBtn = document.getElementById('remove-image-btn');
+        const toggleImageUpload = document.getElementById('toggle-image-upload');
+        const toggleText = document.getElementById('toggle-text');
+
+        imageInput.addEventListener('change', (event) => {
+            if (event.target.files[0]) handleImageFile(event.target.files[0]);
+        });
+        removeImageBtn.addEventListener('click', () => clearImage());
+        
+        function handleImageFile(file) {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    imagePreviewContainer.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert('Vui lòng chọn file ảnh hợp lệ!');
+                clearImage();
+            }
+        }
+
+        function clearImage() {
+            imageInput.value = '';
+            imagePreviewContainer.classList.add('hidden');
+            imagePreview.src = '';
+            imageUploadArea.classList.add('hidden');
+            toggleText.textContent = 'Thêm ảnh hạt điều';
+            toggleImageUpload.classList.remove('bg-orange-600', 'text-white');
+            toggleImageUpload.classList.add('bg-gray-700', 'text-gray-300');
+        }
+
+        ['dragover', 'dragleave', 'drop'].forEach(eventName => {
+            imageUploadArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (eventName === 'dragover') imageUploadArea.classList.add('dragover');
+                else imageUploadArea.classList.remove('dragover');
+                
+                if (eventName === 'drop') {
+                    const file = e.dataTransfer.files[0];
+                    if (file) {
+                        imageInput.files = e.dataTransfer.files;
+                        handleImageFile(file);
+                    }
+                }
+            });
+        });
+
+        imageUploadArea.addEventListener('click', () => imageInput.click());
+
+        toggleImageUpload.addEventListener('click', () => {
+            const isHidden = imageUploadArea.classList.toggle('hidden');
+            toggleText.textContent = isHidden ? 'Thêm ảnh hạt điều' : 'Ẩn vùng tải ảnh';
+            toggleImageUpload.classList.toggle('bg-orange-600');
+            toggleImageUpload.classList.toggle('text-white');
+            if (isHidden) imagePreviewContainer.classList.add('hidden');
+        });
+
+        const SYSTEM_PROMPT = `Bạn là Cashew-AI, một trợ lý ảo thông minh và chuyên nghiệp của một nhà máy chế biến hạt điều hiện đại. Nhiệm vụ của bạn là hỗ trợ người dùng bằng cách cung cấp thông tin, phân tích dữ liệu và trả lời các câu hỏi liên quan đến hoạt động sản xuất của nhà máy.
+        Bối cảnh: Bạn có quyền truy cập vào bộ dữ liệu nội bộ của nhà máy. Dữ liệu này bao gồm ba mảng chính:
+        - Dành cho Ban Lãnh đạo (management): Hiệu suất tổng thể thiết bị (OEE), sản lượng, tỷ lệ lỗi, và điểm chất lượng của các dây chuyền.
+        - Dành cho Kỹ sư QC (qualityControl): Dữ liệu từ buồng phân loại hình ảnh AI, bao gồm số lượng hạt được quét, phân loại các loại lỗi (vỡ, mốc, đốm đen, non), và phân loại theo cấp chất lượng (W180, W240, W320).
+        - Dành cho Vận hành (operations): Trạng thái thời gian thực của các máy móc (máy rang, máy bóc vỏ), các thông số vận hành (nhiệt độ, độ ẩm, tốc độ), và lịch sử bảo trì.
+        
+        Quy tắc ứng xử:
+        1. Tự nhiên và chủ động: Trò chuyện một cách tự nhiên, thân thiện. Nếu câu hỏi không rõ ràng, hãy đặt câu hỏi gợi mở để làm rõ ý định của người dùng.
+        2. Sử dụng dữ liệu: Khi trả lời, hãy trích xuất thông tin chính xác từ bộ dữ liệu được cung cấp. Bạn có thể tóm tắt, so sánh, và phân tích dữ liệu để đưa ra câu trả lời sâu sắc. Dữ liệu có sẵn: ${JSON.stringify(MOCK_DATA)}.
+        3. Phân tích hình ảnh: Khi người dùng gửi ảnh hạt điều, hãy đóng vai trò là một chuyên gia QC. Phân tích hình ảnh để xác định các đặc điểm như: kích thước (ước tính cấp W180, W240, W320), màu sắc, và các dấu hiệu lỗi có thể nhìn thấy (vết nứt, đốm đen, dấu hiệu nấm mốc). Đưa ra đánh giá sơ bộ về chất lượng.
+        4. Bảo mật: Luôn nhấn mạnh rằng đây là dữ liệu nội bộ và chỉ mang tính chất tham khảo.
+        5. Giới hạn kiến thức: Nếu câu hỏi nằm ngoài phạm vi dữ liệu (ví dụ: giá hạt điều trên thị trường thế giới), hãy trả lời rằng bạn là AI chuyên về dữ liệu nội bộ của nhà máy và không có thông tin về lĩnh vực đó.
+        Mục tiêu cuối cùng là trở thành một trợ lý đắc lực, giúp người dùng nhanh chóng nắm bắt thông tin và đưa ra quyết định tốt hơn dựa trên dữ liệu.`;
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userInput = chatInput.value.trim();
+            const selectedImageFile = imageInput.files[0];
+
+            if (selectedImageFile) {
+                appendMessage(`<div class="flex items-center space-x-2"><span>Gửi ảnh:</span><img src="${imagePreview.src}" class="w-16 h-16 object-cover rounded" alt="User Image"></div>`, 'user');
+                const prompt = userInput || "Phân tích ảnh hạt điều này. Đánh giá chất lượng, kích thước và các lỗi có thể thấy.";
+                if (userInput) appendMessage(userInput, 'user');
+                chatInput.value = '';
+                appendMessage('', 'loading');
+                await getGeminiImageAnalysis(selectedImageFile, prompt);
+                clearImage();
+            } else if (userInput) {
+                appendMessage(userInput, 'user');
+                chatInput.value = '';
+                appendMessage('', 'loading');
+                await getGeminiChatResponse(userInput);
+            }
+        });
+
+        function appendMessage(text, type) {
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = `flex ${type === 'user' ? 'justify-end' : 'justify-start'}`;
+            const messageBubble = document.createElement('div');
+            messageBubble.className = 'max-w-lg p-3 rounded-lg';
+
+            if (type === 'user') {
+                messageBubble.classList.add('chat-bubble-user');
+                messageBubble.innerHTML = text;
+            } else if (type === 'ai') {
+                messageBubble.classList.add('chat-bubble-ai');
+                messageBubble.innerHTML = `<p class="font-bold mb-1">Cashew-AI</p><p class="text-sm">${text}</p>`;
+            } else if (type === 'loading') {
+                messageBubble.classList.add('chat-bubble-loading');
+                messageBubble.innerHTML = `<div class="dot"></div><div class="dot"></div><div class="dot"></div>`;
+            }
+            messageWrapper.appendChild(messageBubble);
+            chatMessages.appendChild(messageWrapper);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function updateLastMessage(text, type) {
+            const lastMessageWrapper = chatMessages.lastChild;
+            if (!lastMessageWrapper) return;
+            lastMessageWrapper.innerHTML = '';
+            const messageBubble = document.createElement('div');
+            messageBubble.className = 'max-w-lg p-3 rounded-lg';
+            if (type === 'ai') {
+                lastMessageWrapper.classList.add('justify-start');
+                messageBubble.classList.add('chat-bubble-ai');
+                messageBubble.innerHTML = `<p class="font-bold mb-1">Cashew-AI</p><p class="text-sm">${text}</p>`;
+            }
+            lastMessageWrapper.appendChild(messageBubble);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function getGeminiChatResponse(userInput) {
+            if (!GEMINI_API_KEY) {
+                 updateLastMessage("API Key chưa được cấu hình. Vui lòng thêm API Key để sử dụng chatbot.", 'ai');
+                 return;
+            }
+            if (chatHistory.length === 0) {
+                chatHistory.push({ role: "model", parts: [{ text: SYSTEM_PROMPT }] });
+            }
+            chatHistory.push({ role: "user", parts: [{ text: userInput }] });
+            
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: chatHistory })
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const result = await response.json();
+                const aiResponseText = result.candidates[0].content.parts[0].text;
+                chatHistory.push({ role: "model", parts: [{ text: aiResponseText }] });
+                updateLastMessage(aiResponseText.replace(/\n/g, '<br>'), 'ai');
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                updateLastMessage("Đã có lỗi xảy ra, vui lòng thử lại.", 'ai');
+            }
+        }
+        
+        async function getGeminiImageAnalysis(file, userInput) {
+             if (!GEMINI_API_KEY) {
+                 updateLastMessage("API Key chưa được cấu hình. Vui lòng thêm API Key để sử dụng chatbot.", 'ai');
+                 return;
+            }
+            try {
+                const base64Image = await fileToBase64(file);
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [
+                                { text: userInput },
+                                { inline_data: { mime_type: file.type, data: base64Image.split(',')[1] } }
+                            ]
+                        }]
+                    })
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const result = await response.json();
+                const aiResponseText = result.candidates[0].content.parts[0].text;
+                updateLastMessage(aiResponseText.replace(/\n/g, '<br>'), 'ai');
+            } catch (error) {
+                console.error("Error calling Gemini Image API:", error);
+                updateLastMessage("Lỗi phân tích ảnh: " + error.message, 'ai');
+            }
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // --- DASHBOARD ---
+        function initializeFilters() {
+            populateFilter('management-filter-line', [...new Set(MOCK_DATA.management.map(item => item.line))]);
+            populateFilter('qc-filter-batch', [...new Set(MOCK_DATA.qualityControl.map(item => item.batch))]);
+            populateFilter('operations-filter-device', [...new Set(MOCK_DATA.operations.map(item => item.device))]);
+
+            document.getElementById('management-filter-line').addEventListener('change', () => updateDashboard('management'));
+            document.getElementById('qc-filter-batch').addEventListener('change', () => updateDashboard('qualityControl'));
+            document.getElementById('operations-filter-device').addEventListener('change', () => updateDashboard('operations'));
+            
+            updateDashboard('management');
+            updateDashboard('qualityControl');
+            updateDashboard('operations');
+        }
+
+        function populateFilter(selectId, options) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Tất cả</option>';
+            options.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = opt.textContent = option;
+                select.appendChild(opt);
+            });
+        }
+
+        function getSelectedOption(selectId) {
+            return document.getElementById(selectId).value;
+        }
+
+        function updateDashboard(section) {
+            let filterId, key;
+            if (section === 'management') { filterId = 'management-filter-line'; key = 'line'; } 
+            else if (section === 'qualityControl') { filterId = 'qc-filter-batch'; key = 'batch'; } 
+            else if (section === 'operations') { filterId = 'operations-filter-device'; key = 'device'; }
+            
+            const selected = getSelectedOption(filterId);
+            let data = MOCK_DATA[section];
+            if (selected) {
+                data = MOCK_DATA[section].filter(item => item[key] === selected);
+            }
+            
+            currentFilteredData[section] = data;
+            renderDashboardSection(section, data);
+        }
+
+        function destroyCharts(section) {
+            for (const key in activeCharts) {
+                if (key.startsWith(section)) {
+                    activeCharts[key].destroy();
+                    delete activeCharts[key];
+                }
+            }
+        }
+
+        function renderDashboardSection(section, data) {
+            destroyCharts(section);
+            const container = document.getElementById(`${section}-dashboard-content`);
+            if (!container) return;
+            container.innerHTML = '';
+            
+            if (data.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400">Không có dữ liệu.</p>';
+                return;
+            }
+
+            if (section === 'management') {
+                const totalOutput = data.reduce((sum, item) => sum + item.output, 0);
+                const avgOEE = data.reduce((sum, item) => sum + item.oee, 0) / data.length;
+                const avgDefectRate = data.reduce((sum, item) => sum + item.defectRate, 0) / data.length;
+                container.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-gray-700 p-4 rounded-lg text-center"><div class="text-3xl font-bold text-green-400">${totalOutput.toLocaleString()} kg</div><div class="text-sm text-gray-400">Tổng sản lượng</div></div>
+                        <div class="bg-gray-700 p-4 rounded-lg text-center"><div class="text-3xl font-bold text-blue-400">${avgOEE.toFixed(1)}%</div><div class="text-sm text-gray-400">OEE Trung bình</div></div>
+                        <div class="bg-gray-700 p-4 rounded-lg text-center"><div class="text-3xl font-bold text-red-400">${avgDefectRate.toFixed(1)}%</div><div class="text-sm text-gray-400">Tỷ lệ lỗi</div></div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-gray-900 p-4 rounded-lg"><h3 class="font-semibold mb-2 text-center">Sản lượng vs Mục tiêu (kg)</h3><canvas id="managementChart1"></canvas></div>
+                        <div class="bg-gray-900 p-4 rounded-lg"><h3 class="font-semibold mb-2 text-center">Điểm chất lượng</h3><canvas id="managementChart2"></canvas></div>
+                    </div>`;
+                const labels = data.map(d => d.line);
+                activeCharts.managementChart1 = new Chart(document.getElementById('managementChart1'), { type: 'bar', data: { labels, datasets: [{ label: 'Sản lượng', data: data.map(d => d.output), backgroundColor: 'rgba(52, 211, 153, 0.7)' }, { label: 'Mục tiêu', data: data.map(d => d.target), backgroundColor: 'rgba(251, 191, 36, 0.7)' }] }, options: chartOptions });
+                activeCharts.managementChart2 = new Chart(document.getElementById('managementChart2'), { type: 'line', data: { labels, datasets: [{ label: 'Điểm chất lượng', data: data.map(d => d.qualityScore), borderColor: '#60a5fa', tension: 0.1 }] }, options: chartOptions });
+            } else if (section === 'qualityControl') {
+                const totalDefects = data.reduce((sum, item) => sum + Object.values(item.defects).reduce((a, b) => a + b, 0), 0);
+                const totalScanned = data.reduce((sum, item) => sum + item.totalScanned, 0);
+                const defectRate = totalScanned > 0 ? (totalDefects / totalScanned * 100).toFixed(2) : 0;
+                container.innerHTML = `
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="bg-gray-700 p-4 rounded-lg text-center"><div class="text-3xl font-bold text-yellow-400">${totalScanned.toLocaleString()}</div><div class="text-sm text-gray-400">Tổng số hạt đã quét</div></div>
+                        <div class="bg-gray-700 p-4 rounded-lg text-center"><div class="text-3xl font-bold text-red-400">${defectRate}%</div><div class="text-sm text-gray-400">Tỷ lệ lỗi tổng thể</div></div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-gray-900 p-4 rounded-lg"><h3 class="font-semibold mb-2 text-center">Phân loại lỗi</h3><canvas id="qcChart1"></canvas></div>
+                        <div class="bg-gray-900 p-4 rounded-lg"><h3 class="font-semibold mb-2 text-center">Phân loại chất lượng</h3><canvas id="qcChart2"></canvas></div>
+                    </div>
+                    <div class="mt-6 bg-gray-900 p-4 rounded-lg"><h3 class="font-semibold mb-2">Chi tiết các lô</h3><div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="px-6 py-3">Mã Lô</th><th class="px-6 py-3">Thời gian</th><th class="px-6 py-3">Tổng quét</th><th class="px-6 py-3">Tổng lỗi</th></tr></thead><tbody id="qcTable"></tbody></table></div></div>`;
+                
+                const defectData = data.reduce((acc, item) => {
+                    for (const [key, value] of Object.entries(item.defects)) {
+                        acc[key] = (acc[key] || 0) + value;
+                    }
+                    return acc;
+                }, {});
+                activeCharts.qcChart1 = new Chart(document.getElementById('qcChart1'), { type: 'doughnut', data: { labels: Object.keys(defectData), datasets: [{ data: Object.values(defectData), backgroundColor: ['#ef4444', '#f97316', '#84cc16', '#3b82f6'] }] }, options: chartOptionsNoX });
+
+                const gradeData = data.reduce((acc, item) => {
+                    for (const [key, value] of Object.entries(item.grades)) {
+                        acc[key] = (acc[key] || 0) + value;
+                    }
+                    return acc;
+                }, {});
+                activeCharts.qcChart2 = new Chart(document.getElementById('qcChart2'), { type: 'bar', data: { labels: Object.keys(gradeData), datasets: [{ label: 'Số lượng', data: Object.values(gradeData), backgroundColor: '#a855f7' }] }, options: chartOptions });
+                populateTable('qcTable', data, ['batch', 'timestamp', 'totalScanned'], (item) => Object.values(item.defects).reduce((a, b) => a + b, 0), item => showModal(`Chi tiết lô ${item.batch}`, `<p><strong>Thời gian:</strong> ${item.timestamp}</p><p><strong>Tổng quét:</strong> ${item.totalScanned}</p><ul>${Object.entries(item.defects).map(([k,v]) => `<li><strong>${k}:</strong> ${v}</li>`).join('')}</ul><img src="${item.imageUrl}" class="mt-4 rounded-lg w-full" alt="Ảnh lô hàng">`));
+            } else if (section === 'operations') {
+                container.innerHTML = `<div class="bg-gray-900 p-4 rounded-lg"><h3 class="font-semibold mb-2">Trạng thái thiết bị</h3><div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="px-6 py-3">Thiết bị</th><th class="px-6 py-3">Dây chuyền</th><th class="px-6 py-3">Trạng thái</th><th class="px-6 py-3">Năng lượng (kWh)</th></tr></thead><tbody id="operationsTable"></tbody></table></div></div>`;
+                populateOperationsTable('operationsTable', data);
+            }
+        }
+
+        const chartOptions = { plugins: { legend: { labels: { color: '#d1d5db' } } }, scales: { y: { ticks: { color: '#d1d5db' }, grid: { color: '#4b5563' } }, x: { ticks: { color: '#d1d5db' }, grid: { color: '#4b5563' } } } };
+        const chartOptionsNoX = { plugins: { legend: { position: 'top', labels: { color: '#d1d5db' } } } };
+        
+        async function getGeminiAnalysis(section, data) {
+            if (!GEMINI_API_KEY) return "Vui lòng cấu hình API Key để sử dụng tính năng này.";
+            if (!data || data.length === 0) return "Vui lòng chọn bộ lọc để có dữ liệu phân tích.";
+            
+            const sectionNames = { 'management': 'Ban Lãnh đạo', 'qualityControl': 'Kỹ sư QC', 'operations': 'Vận hành' };
+            const prompt = `Với vai trò là một chuyên gia phân tích dữ liệu cho nhà máy hạt điều, hãy phân tích bộ dữ liệu sau đây dành cho đối tượng là '${sectionNames[section] || section}'. 
+            Hãy đưa ra 2-3 nhận định quan trọng nhất và một đề xuất hành động cụ thể. Trình bày dưới dạng gạch đầu dòng, ngôn ngữ chuyên nghiệp, súc tích bằng tiếng Việt.
+            Dữ liệu: ${JSON.stringify(data)}`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const result = await response.json();
+                return result.candidates[0].content.parts[0].text.replace(/\*/g, '').replace(/\n/g, '<br>');
+            } catch (error) {
+                console.error(`Error getting analysis for ${section}:`, error);
+                return "Lỗi khi kết nối đến AI để phân tích.";
+            }
+        }
+
+        document.querySelectorAll('.toggle-analysis').forEach(button => {
+            button.addEventListener('click', async () => {
+                const content = button.nextElementSibling;
+                const icon = button.querySelector('svg');
+                const section = button.dataset.section;
+                
+                content.classList.toggle('hidden');
+                icon.classList.toggle('rotate-180');
+
+                if (!content.classList.contains('hidden')) {
+                    content.innerHTML = '<p>Đang tạo phân tích...</p>';
+                    const analysisText = await getGeminiAnalysis(section, currentFilteredData[section]);
+                    content.innerHTML = `<p>${analysisText}</p>`;
+                }
+            });
+        });
+        
+        // --- MODAL & TABLE POPULATION ---
+        const modal = document.getElementById('detail-modal');
+        const closeModalBtn = document.getElementById('close-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalContent = document.getElementById('modal-content');
+
+        function showModal(title, content) {
+            modalTitle.textContent = title;
+            modalContent.innerHTML = content;
+            modal.classList.remove('hidden');
+        }
+        function hideModal() { modal.classList.add('hidden'); }
+        closeModalBtn.addEventListener('click', hideModal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) hideModal(); });
+        
+        function populateTable(tbodyId, data, columns, extraColumnData, detailRenderer) {
+            const tbody = document.getElementById(tbodyId);
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.className = 'bg-gray-800 border-b border-gray-700 hover:bg-gray-600 cursor-pointer';
+                columns.forEach(col => {
+                    const cell = document.createElement('td');
+                    cell.className = 'px-6 py-4';
+                    cell.textContent = item[col];
+                    row.appendChild(cell);
+                });
+                const extraCell = document.createElement('td');
+                extraCell.className = 'px-6 py-4';
+                extraCell.textContent = extraColumnData(item);
+                row.appendChild(extraCell);
+
+                row.addEventListener('click', () => detailRenderer(item));
+                tbody.appendChild(row);
+            });
+        }
+        
+        function populateOperationsTable(tbodyId, data) {
+            const tbody = document.getElementById(tbodyId);
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.className = 'bg-gray-800 border-b border-gray-700 hover:bg-gray-600 cursor-pointer';
+                const statusColor = item.status === 'Hoạt động' ? 'text-green-400' : 'text-red-400';
+                row.innerHTML = `
+                    <td class="px-6 py-4 font-medium">${item.device}</td>
+                    <td class="px-6 py-4">${item.line}</td>
+                    <td class="px-6 py-4"><span class="${statusColor}">${item.status}</span></td>
+                    <td class="px-6 py-4">${item.energy}</td>
+                `;
+                row.addEventListener('click', () => showModal(`Chi tiết ${item.device}`, `
+                    <p><strong>Dây chuyền:</strong> ${item.line}</p>
+                    <p><strong>Trạng thái:</strong> <span class="${statusColor}">${item.status}</span></p>
+                    <p><strong>Nhiệt độ:</strong> ${item.temperature}°C</p>
+                    <p><strong>Độ ẩm:</strong> ${item.humidity}%</p>
+                    <p><strong>Tốc độ:</strong> ${item.speed} hạt/phút</p>
+                    <p><strong>Năng lượng tiêu thụ:</strong> ${item.energy} kWh</p>
+                    <p><strong>Bảo trì gần nhất:</strong> ${item.lastMaintenance}</p>
+                `));
+                tbody.appendChild(row);
+            });
+        }
+
+        // --- INITIALIZE ---
+        initializeFilters();
+    });
+    </script>
+</body>
+</html>
