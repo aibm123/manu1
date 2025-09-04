@@ -52,7 +52,7 @@
         <!-- Main Content -->
         <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
             <!-- Bot Page -->
-            <div id="page-bot" class="hidden">
+            <div id="page-bot">
                 <div class="max-w-4xl mx-auto h-[calc(100vh-150px)] flex flex-col bg-gray-800 rounded-lg shadow-xl">
                     <div id="chat-messages" class="flex-1 p-6 overflow-y-auto space-y-4">
                         <div class="flex justify-start">
@@ -98,7 +98,7 @@
             </div>
 
             <!-- Dashboard Page -->
-            <div id="page-dashboard">
+            <div id="page-dashboard" class="hidden">
                 <div class="space-y-8">
                      <!-- New Section: Production Overview -->
                     <section class="bg-gray-800 p-6 rounded-lg shadow-xl">
@@ -236,10 +236,8 @@
             [navBot, navDashboard].forEach(b => b.classList.replace('bg-orange-600', 'bg-gray-700'));
             if (pageToShow === pageBot) {
                  navBot.classList.replace('bg-gray-700', 'bg-orange-600');
-                 pageBot.classList.remove('hidden');
             } else {
                  navDashboard.classList.replace('bg-gray-700', 'bg-orange-600');
-                 pageDashboard.classList.remove('hidden');
             }
         }
 
@@ -521,7 +519,6 @@
             
             let tableHtml = `<table class="w-full text-sm text-left"><thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="px-4 py-2">Ngày dự báo</th><th class="px-4 py-2 text-right">Sản lượng (kg)</th></tr></thead><tbody>`;
             forecastData.forEach(item => {
-                // FIX: The response item is the forecast object itself, not nested under a 'json' key.
                 const forecast = item;
                 tableHtml += `<tr class="bg-gray-800 border-b border-gray-700">
                     <td class="px-4 py-2">${forecast.NgayThangDuBao}</td>
@@ -538,8 +535,7 @@
                 chart.data.labels = MOCK_DATA.productionTrend.map(d => d.ngay);
                 chart.data.datasets[0].data = MOCK_DATA.productionTrend.map(d => d.sanLuong);
             }
-
-            // FIX: The response item is the forecast object itself, not nested under a 'json' key.
+            
             const forecastLabels = forecastData.map(item => item.NgayThangDuBao);
             const forecastValues = forecastData.map(item => item.SanLuongDuBao);
             
@@ -592,7 +588,7 @@
             else if (section === 'qualityControl') { filterId = 'qc-filter-batch'; key = 'batch'; } 
             else if (section === 'operations') { filterId = 'operations-filter-device'; key = 'device'; }
             
-            const selected = getSelectedOption(selectId);
+            const selected = getSelectedOption(filterId);
             let data = MOCK_DATA[section];
             if (selected) {
                 data = MOCK_DATA[section].filter(item => item[key] === selected);
